@@ -18,9 +18,10 @@ Default configuration:
 - Dashboard: `0.0.0.0:20128`
 - Target router: `http://127.0.0.1:20130/`
 
-Konfigurasi dapat diubah lewat environment variable:
+Konfigurasi dapat diubah lewat environment variable. Username dan password dashboard wajib diisi:
 
 ```bash
+DASHBOARD_USER=admin DASHBOARD_PASSWORD='ganti-password-kuat' \
 HOST=0.0.0.0 PORT=8080 ROUTER_URL=http://127.0.0.1:20128/ node app.js
 ```
 
@@ -32,6 +33,8 @@ Buka `http://IP-SERVER:20128` dari browser.
 sudo mkdir -p /opt/9router-status
 sudo install -m 0644 app.js /opt/9router-status/app.js
 sudo install -m 0644 systemd/9router-status.service /etc/systemd/system/9router-status.service
+sudo sh -c 'printf "%s\n" "DASHBOARD_USER=admin" "DASHBOARD_PASSWORD=ganti-password-kuat" > /etc/dashboard-temon.env'
+sudo chmod 600 /etc/dashboard-temon.env
 sudo systemctl daemon-reload
 sudo systemctl enable --now 9router-status.service
 ```

@@ -1,5 +1,6 @@
 const http = require('node:http');
 const { execFile } = require('node:child_process');
+const { timingSafeEqual } = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 const { promisify } = require('node:util');
 
@@ -8,6 +9,33 @@ const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number.parseInt(process.env.PORT || '20128', 10);
 const ROUTER_URL = process.env.ROUTER_URL || 'http://127.0.0.1:20130/';
 const BOT_SERVICE = process.env.BOT_SERVICE || 'something-ai.service';
+const DASHBOARD_USER = process.env.DASHBOARD_USER || '';
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
+
+if (!DASHBOARD_USER || !DASHBOARD_PASSWORD) {
+  console.error('DASHBOARD_USER dan DASHBOARD_PASSWORD wajib diisi.');
+  process.exit(1);
+}
+
+function safeEqual(actual, expected) {
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+function isAuthorized(req) {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Basic ')) return false;
+  try {
+    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+    const separator = decoded.indexOf(':');
+    if (separator < 0) return false;
+    return safeEqual(decoded.slice(0, separator), DASHBOARD_USER) &&
+      safeEqual(decoded.slice(separator + 1), DASHBOARD_PASSWORD);
+  } catch {
+    return false;
+  }
+}
 
 const page = `<!doctype html>
 <html lang="id">
@@ -77,6 +105,15 @@ const securityHeaders = {
 };
 
 http.createServer(async (req, res) => {
+  if (!isAuthorized(req)) {
+    res.writeHead(401, {
+      ...securityHeaders,
+      'WWW-Authenticate': 'Basic realm="Dashboard Temon", charset="UTF-8"',
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
+    return res.end('Login diperlukan.');
+  }
   if (req.url === '/api/status') {
     const [router, bot] = await Promise.all([routerStatus(), botStatus()]);
     res.writeHead(200, { ...securityHeaders, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
