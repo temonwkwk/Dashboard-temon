@@ -1,0 +1,14 @@
+{
+  "name": "dashboard-temon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lightweight public status dashboard for 9Router",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "check": "node --check app.js"
+  }
+}
